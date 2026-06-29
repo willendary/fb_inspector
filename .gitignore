@@ -1,0 +1,17 @@
+# Ignore o arquivo de variáveis de ambiente com senhas reais
+.env
+
+# Arquivos compilados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
