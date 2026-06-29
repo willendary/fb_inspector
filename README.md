@@ -1,66 +1,75 @@
-# Firebird AI Inspector
+# Firebird AI Inspector (`fb_inspector`)
 
-Uma ferramenta de linha de comando (CLI) desenvolvida em Python para atuar como uma ponte direta entre a sua Inteligência Artificial (como o Antigravity / Gemini) e o seu banco de dados Firebird.
+Uma ferramenta de linha de comando (CLI) arquitetada para atuar como uma interface amigável para Agentes de Inteligência Artificial (LLMs) inspecionarem bancos de dados Firebird.
 
-O objetivo deste projeto é permitir que a IA consulte em tempo real a estrutura do seu banco de dados (tabelas, colunas, tipos) e execute consultas para entender o modelo de dados, sem que você precise enviar arquivos DDL manualmente durante as conversas.
+Ao invés de copiar e colar DDLs gigantes no chat da sua IA, você simplesmente pede para ela rodar essa ferramenta no terminal e ela extrairá a estrutura do banco perfeitamente formatada em tempo real. Funciona como um "IBExpert de Terminal".
 
-## 🚀 Como funciona?
+## 🚀 Por que este projeto existe?
+Sistemas legados como Delphi/Firebird não possuem ferramentas nativas de CLI que retornam dados formatados de maneira inteligível para uma IA (em formato Markdown/Grid). O `fb_inspector` resolve isso gerando tabelas perfeitas que impedem as LLMs de alucinarem nomes de colunas e constraints.
 
-O script utiliza a biblioteca `fdb` oficial para se conectar ao banco Firebird e extrai metadados essenciais. Ele foi desenhado para cuspir os resultados em formato de tabelas de texto puro (`tabulate`), o que torna a leitura extremamente fácil para LLMs (Large Language Models).
+## ✨ Funcionalidades
+- **Tabelas e Views:** Listagem rápida de objetos.
+- **Schemas Detalhados:** Mostra colunas, tipos de dados, nulidade e sinaliza Chaves Primárias (PK).
+- **Procedures e Triggers:** Extrai o código-fonte integral direto do terminal.
+- **Generators/Sequences:** Lista e consulta os valores atuais em tempo real (`GEN_ID`).
+- **Query Livre:** Executa DML/DDL de forma segura (limitado a 100 linhas no output para proteger o terminal).
 
-## 📦 Instalação
+## 🛠️ Instalação
+
+Como o projeto segue o padrão profissional de pacotes Python (`pyproject.toml`), a instalação global é muito simples:
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/SEU_USUARIO/fb_inspector.git
+git clone https://github.com/willendary/fb_inspector.git
 cd fb_inspector
 ```
 
-2. Instale as dependências:
+2. Instale as dependências e a ferramenta de forma global (Modo Editável):
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
-3. Configure o ambiente:
-Copie o arquivo `.env.example` para `.env` e preencha com as informações do seu banco de dados Firebird.
-```bash
-cp .env.example .env
-```
-*(No Windows, basta duplicar o arquivo e renomeá-lo para `.env`)*
+3. Crie e configure o arquivo `.env` na raiz do projeto (use o `.env.example` como base).
 
-## 🛠️ Como Integrar com a sua IA
+## 🔧 Configuração (.env)
+Este script resolve automaticamente o problema da dll `fbclient.dll` (comum em ambientes com múltiplas versões como HQBird). Configure seu arquivo `.env`:
 
-Para que a sua IA comece a usar a ferramenta automaticamente, crie um arquivo chamado `.agents/AGENTS.md` na raiz do seu projeto de desenvolvimento (onde você conversa com a IA) e adicione a seguinte regra:
-
-```markdown
-- **Firebird AI Inspector**: Sempre que precisar de informações sobre a estrutura do banco de dados Firebird, NÃO TENTE ADIVINHAR. 
-  - Utilize sua ferramenta de terminal (run_command) para executar o script: `python C:\Caminho\Para\fb_inspector.py schema NOME_DA_TABELA`
-  - Para listar tabelas, use `python C:\Caminho\Para\fb_inspector.py tables`.
+```env
+FB_HOST=localhost
+FB_PORT=3055
+FB_DATABASE=D:\Dados\sky\Dados\porto 9 fb40\FINANCEIRO.GDB
+FB_USER=SYSDBA
+FB_PASSWORD=masterkey
+FB_CHARSET=ISO8859_1
+FB_CLIENT_PATH=C:\Program Files (x86)\IBSurgeon\HQBird Firebird Admin 2024\ClientLibs\64\4.0\fbclient.dll
 ```
 
-## 💻 Uso Manual (Linha de Comando)
+## 📖 Como Usar (Comandos)
 
-Você também pode usar a ferramenta manualmente no terminal:
+Uma vez instalado via `pip install`, você (ou sua IA) pode rodar o comando `fb-inspector` de qualquer lugar do terminal:
 
-**Listar todas as tabelas:**
-```bash
-python fb_inspector.py tables
-```
+| Comando | Descrição |
+|---------|-----------|
+| `fb-inspector tables` | Lista todas as tabelas (User Tables) |
+| `fb-inspector views` | Lista todas as views |
+| `fb-inspector schema <tabela>` | Mostra os campos, tipos e PKs de uma tabela/view |
+| `fb-inspector procedures` | Lista todas as Stored Procedures |
+| `fb-inspector procedure <nome>`| Extrai o código-fonte SQL de uma procedure |
+| `fb-inspector triggers` | Lista todas as Triggers |
+| `fb-inspector triggers --table <tabela>` | Filtra as Triggers de uma tabela específica |
+| `fb-inspector trigger <nome>` | Extrai o código-fonte de uma Trigger |
+| `fb-inspector indices <tabela>` | Lista os índices e os campos indexados de uma tabela |
+| `fb-inspector generators` | Lista os generators e mostra o valor atual |
+| `fb-inspector query "<sql>"` | Executa uma consulta livre (limitada a 100 resultados) |
 
-**Ver a estrutura de uma tabela:**
-```bash
-python fb_inspector.py schema NOME_DA_TABELA
-```
+*(Você também pode sobrescrever as credenciais do .env passando flags no comando: `--db`, `--user`, `--password`, etc).*
 
-**Executar uma query:**
-```bash
-python fb_inspector.py query "SELECT FIRST 5 * FROM CLIENTES"
-```
+## 🏗️ Arquitetura e Engenharia
+Este projeto utiliza:
+- **SOLID & Orientação a Objetos**: Lógica de banco isolada da camada de apresentação.
+- **Testes Unitários**: Garantia de integridade com `unittest` e `mock`.
+- **CI/CD**: Automação com GitHub Actions para Linting (`black`) e Testes.
+- **Logging**: Erros críticos são salvos silenciosamente no arquivo `inspector.log`.
 
-**Sobrescrever configurações do `.env` temporariamente:**
-```bash
-python fb_inspector.py --host 192.168.0.100 --db "C:\outro_banco.fdb" tables
-```
-
-## ⚠️ Atenção (Segurança)
-Nunca combe o seu arquivo `.env` com senhas reais no GitHub. O arquivo `.gitignore` já está configurado para ignorá-lo.
+## 📄 Licença
+Distribuído sob a licença MIT. Sinta-se livre para usar, modificar e contribuir!
