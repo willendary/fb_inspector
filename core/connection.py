@@ -3,14 +3,15 @@ import fdb
 import logging
 
 logging.basicConfig(
-    filename='inspector.log', 
-    level=logging.ERROR, 
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    filename="inspector.log",
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 class DatabaseConnection:
     """Gerencia a conexão com o Firebird."""
-    
+
     def __init__(self, host, port, database, user, password, charset):
         try:
             self.conn = fdb.connect(
@@ -19,11 +20,13 @@ class DatabaseConnection:
                 database=database,
                 user=user,
                 password=password,
-                charset=charset
+                charset=charset,
             )
         except Exception as e:
             logging.error(f"Falha na conexão: {e}")
-            print(f"Erro Crítico: Falha na conexão com o banco de dados. (Veja inspector.log para detalhes)")
+            print(
+                f"Erro Crítico: Falha na conexão com o banco de dados. (Veja inspector.log para detalhes)"
+            )
             sys.exit(1)
 
     def close(self):

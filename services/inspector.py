@@ -1,8 +1,9 @@
 from core.formatter import OutputFormatter
 
+
 class InspectorService:
     """Concentra todas as queries de sistema (metadados) do Firebird."""
-    
+
     def __init__(self, db_connection):
         self.db = db_connection
         self.formatter = OutputFormatter()
@@ -66,16 +67,20 @@ class InspectorService:
             fscale = row[4]
             not_null = "SIM" if row[5] == 1 else ""
             is_pk = "PK" if row[6] == 1 else ""
-            
+
             type_str = ftype
-            if ftype in ('VARYING', 'TEXT', 'CSTRING'):
+            if ftype in ("VARYING", "TEXT", "CSTRING"):
                 type_str = f"{ftype}({flen})"
-            elif ftype in ('SHORT', 'LONG', 'INT64', 'DOUBLE', 'FLOAT') and fscale and fscale < 0:
-                 type_str = f"NUMERIC/DECIMAL({fprec}, {-fscale})"
-                 
+            elif ftype in ("SHORT", "LONG", "INT64", "DOUBLE", "FLOAT") and fscale and fscale < 0:
+                type_str = f"NUMERIC/DECIMAL({fprec}, {-fscale})"
+
             formatted_rows.append([is_pk, fname, type_str, not_null])
-            
-        self.formatter.print_table(["Chave", "Campo", "Tipo de Dado", "Obrigatório"], formatted_rows, f"Estrutura: {table_name.upper()}")
+
+        self.formatter.print_table(
+            ["Chave", "Campo", "Tipo de Dado", "Obrigatório"],
+            formatted_rows,
+            f"Estrutura: {table_name.upper()}",
+        )
 
     def list_procedures(self):
         sql = """
@@ -110,17 +115,19 @@ class InspectorService:
         if table_name:
             sql += " AND RDB$RELATION_NAME = UPPER(?)"
             params.append(table_name)
-            
+
         sql += " ORDER BY RDB$RELATION_NAME, RDB$TRIGGER_SEQUENCE"
-        
+
         _, rows = self.db.fetch_all(sql, params)
         formatted_rows = []
         for r in rows:
             trigger_name = str(r[0]).strip()
-            t_name = str(r[1]).strip() if r[1] else 'DB_TRIGGER'
+            t_name = str(r[1]).strip() if r[1] else "DB_TRIGGER"
             formatted_rows.append([trigger_name, t_name, r[2], r[3]])
-            
-        self.formatter.print_table(["Trigger", "Tabela/Escopo", "Ordem", "Tipo (Num)"], formatted_rows, "Triggers")
+
+        self.formatter.print_table(
+            ["Trigger", "Tabela/Escopo", "Ordem", "Tipo (Num)"], formatted_rows, "Triggers"
+        )
 
     def show_trigger(self, trigger_name):
         sql = """
@@ -142,7 +149,7 @@ class InspectorService:
             ORDER BY RDB$GENERATOR_NAME
         """
         _, rows = self.db.fetch_all(sql)
-        
+
         formatted_rows = []
         cur = self.db.get_raw_connection().cursor()
         for r in rows:
@@ -151,10 +158,12 @@ class InspectorService:
                 cur.execute(f"SELECT GEN_ID({gen_name}, 0) FROM RDB$DATABASE")
                 val = cur.fetchone()[0]
             except:
-                val = 'Erro ao ler'
+                val = "Erro ao ler"
             formatted_rows.append([gen_name, val])
-            
-        self.formatter.print_table(["Generator / Sequence", "Valor Atual"], formatted_rows, "Generators Ativos")
+
+        self.formatter.print_table(
+            ["Generator / Sequence", "Valor Atual"], formatted_rows, "Generators Ativos"
+        )
 
     def list_indices(self, table_name):
         sql = """
@@ -168,22 +177,26 @@ class InspectorService:
             ORDER BY IDX.RDB$INDEX_NAME, IDX_SEG.RDB$FIELD_POSITION
         """
         _, rows = self.db.fetch_all(sql, (table_name.upper(),))
-        
+
         idx_dict = {}
         for r in rows:
             idx_name = str(r[0]).strip()
             is_unique = "SIM" if r[1] == 1 else "NÃO"
             field = str(r[2]).strip()
-            
+
             if idx_name not in idx_dict:
-                idx_dict[idx_name] = {'unique': is_unique, 'fields': []}
-            idx_dict[idx_name]['fields'].append(field)
-            
+                idx_dict[idx_name] = {"unique": is_unique, "fields": []}
+            idx_dict[idx_name]["fields"].append(field)
+
         formatted_rows = []
         for name, data in idx_dict.items():
-            formatted_rows.append([name, data['unique'], ", ".join(data['fields'])])
-            
-        self.formatter.print_table(["Nome do Índice", "Único?", "Campos Indexados"], formatted_rows, f"Índices da Tabela: {table_name.upper()}")
+            formatted_rows.append([name, data["unique"], ", ".join(data["fields"])])
+
+        self.formatter.print_table(
+            ["Nome do Índice", "Único?", "Campos Indexados"],
+            formatted_rows,
+            f"Índices da Tabela: {table_name.upper()}",
+        )
 
     def execute_query(self, sql):
         cur = self.db.get_raw_connection().cursor()
@@ -194,7 +207,9 @@ class InspectorService:
                 rows = cur.fetchmany(100)
                 self.formatter.print_table(headers, rows, "Resultado da Consulta (Max 100 linhas)")
                 if cur.fetchone():
-                   print("\n... (mais resultados foram omitidos para não sobrecarregar o terminal)")
+                    print(
+                        "\n... (mais resultados foram omitidos para não sobrecarregar o terminal)"
+                    )
             else:
                 self.db.get_raw_connection().commit()
                 print("Instrução executada com sucesso. (Commit realizado, nenhum dado retornado)")
