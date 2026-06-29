@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fb_inspector"
+version = "1.0.0"
+description = "Firebird AI Inspector - Ponte CLI para Agentes LLM"
+readme = "README.md"
+authors = [
+    { name = "Willian Oliveira", email = "dev@example.com" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fdb==2.0.4",
+    "python-dotenv==1.2.2",
+    "tabulate==0.10.0"
+]
+
+[project.scripts]
+fb-inspector = "fb_inspector:main"
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | __pycache__
+  | build
+  | dist
+)/
+'''
