@@ -155,9 +155,12 @@ class InspectorService:
         for r in rows:
             gen_name = str(r[0]).strip()
             try:
+                # Dispara GEN_ID internamente
                 cur.execute(f"SELECT GEN_ID({gen_name}, 0) FROM RDB$DATABASE")
                 val = cur.fetchone()[0]
-            except:
+                self.db.log_sql(f"SELECT GEN_ID({gen_name}, 0) FROM RDB$DATABASE", rows_affected=1)
+            except Exception as e:
+                self.db.log_sql(f"SELECT GEN_ID({gen_name}, 0) FROM RDB$DATABASE", error=str(e))
                 val = "Erro ao ler"
             formatted_rows.append([gen_name, val])
 
@@ -205,6 +208,7 @@ class InspectorService:
             if cur.description:
                 headers = [desc[0] for desc in cur.description]
                 rows = cur.fetchmany(100)
+                self.db.log_sql(sql, rows_affected=len(rows))
                 self.formatter.print_table(headers, rows, "Resultado da Consulta (Max 100 linhas)")
                 if cur.fetchone():
                     print(
@@ -212,6 +216,8 @@ class InspectorService:
                     )
             else:
                 self.db.get_raw_connection().commit()
+                self.db.log_sql(sql, rows_affected=cur.rowcount)
                 print("Instrução executada com sucesso. (Commit realizado, nenhum dado retornado)")
         except Exception as e:
+            self.db.log_sql(sql, error=str(e))
             print(f"Erro ao executar a instrução SQL:\n{e}")
